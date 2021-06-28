@@ -71,28 +71,24 @@ EXCLUDES_saved <- EXCLUDES
 
 if ("Total.animals" %in% EXCLUDES) EXCLUDES <- EXCLUDES_saved #cat("Warning: \"Total.animals\" in EXCLUDES")
 
-# PPR_zebras_x <- PPR_LDA(df_zebras,FITNESS="Total.animals",exclude=EXCLUDES)
 PPR_zebras <- DimReduction(df_zebras,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_zebras$ppr$gof
 PPR_zebras$ppr$beta
 View(abs(PPR_zebras$weights))
 df_zebras[,c("PP1","PP2")] <- PPR_zebras$columns
 
-# PPR_gz <- PPR_LDA(df_gz,FITNESS="Total.animals",exclude=EXCLUDES)
 PPR_gz <- DimReduction(df_gz,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_zebras$ppr$gof
 PPR_zebras$ppr$beta
 View(abs(PPR_gz$weights))
 df_gz[,c("PP1","PP2")] <- PPR_gz$columns
 
-# PPR_pz <- PPR_LDA(df_pz,FITNESS="Total.animals",exclude=EXCLUDES)
 PPR_pz <- DimReduction(df_pz,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_pz$ppr$gof
 PPR_pz$ppr$beta
 View(abs(PPR_pz$weights))
 df_pz[,c("PP1","PP2")] <- PPR_pz$columns
 
-# PPR_cattle <- PPR_LDA(df_cattle,FITNESS="Total.animals",exclude=c(EXCLUDES,"Rain"))
 PPR_cattle <- DimReduction(df_cattle,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_cattle$ppr$gof
 PPR_cattle$ppr$beta
