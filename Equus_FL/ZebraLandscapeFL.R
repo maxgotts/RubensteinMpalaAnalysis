@@ -1,5 +1,7 @@
 rm(list=ls())
 
+VIEW <- FALSE
+
 install.packages("~/fitnesslandscapes2", 
                  repos = NULL, 
                  type = "source")
@@ -25,7 +27,7 @@ for (colm in colnames(df)) {
   }
 }
 
-View(df[,c("Species","Species.backup")])
+if (VIEW) View(df[,c("Species","Species.backup")])
 df$Species.backup <- NULL
 
 df$Other.species.3 <- NULL # Since it's empty right now
@@ -74,25 +76,25 @@ if ("Total.animals" %in% EXCLUDES) EXCLUDES <- EXCLUDES_saved #cat("Warning: \"T
 PPR_zebras <- DimReduction(df_zebras,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_zebras$ppr$gof
 PPR_zebras$ppr$beta
-View(abs(PPR_zebras$weights))
+if (VIEW) View(abs(PPR_zebras$weights))
 df_zebras[,c("PP1","PP2")] <- PPR_zebras$columns
 
 PPR_gz <- DimReduction(df_gz,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_zebras$ppr$gof
 PPR_zebras$ppr$beta
-View(abs(PPR_gz$weights))
+if (VIEW) View(abs(PPR_gz$weights))
 df_gz[,c("PP1","PP2")] <- PPR_gz$columns
 
 PPR_pz <- DimReduction(df_pz,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_pz$ppr$gof
 PPR_pz$ppr$beta
-View(abs(PPR_pz$weights))
+if (VIEW) View(abs(PPR_pz$weights))
 df_pz[,c("PP1","PP2")] <- PPR_pz$columns
 
 PPR_cattle <- DimReduction(df_cattle,TYPE="PPR",EXCLUDE=EXCLUDES,VARIABLE="Total.animals")
 PPR_cattle$ppr$gof
 PPR_cattle$ppr$beta
-View(abs(PPR_cattle$weights))
+if (VIEW) View(abs(PPR_cattle$weights))
 df_cattle[,c("PP1","PP2")] <- PPR_cattle$columns
 
 
@@ -101,22 +103,27 @@ df_cattle[,c("PP1","PP2")] <- PPR_cattle$columns
 EXCLUDES <- c(EXCLUDES, "Total.animals")
 
 PCA_zebras <- DimReduction(df_zebras,TYPE="PCA",EXCLUDE=EXCLUDES)
-PCA_zebras$pca
+if (VIEW) View(PCA_zebras$columns)
 df_zebras[,c("PC1","PC2")] <- PCA_zebras$columns
 
 PCA_gz <- DimReduction(df_gz,TYPE="PCA",EXCLUDE=EXCLUDES)
-PCA_gz$pca
+if (VIEW) View(PCA_gz$columns)
 df_gz[,c("PC1","PC2")] <- PCA_gz$columns
 
 PCA_pz <- DimReduction(df_pz,TYPE="PCA",EXCLUDE=EXCLUDES)
+if (VIEW) View(PCA_pz$columns)
 df_pz[,c("PC1","PC2")] <- PCA_pz$columns
 
 PCA_cattle <- DimReduction(df_cattle,TYPE="PCA",EXCLUDE=EXCLUDES)
+if (VIEW) View(PCA_cattle$columns)
 df_cattle[,c("PC1","PC2")] <- PCA_cattle$columns
 
 
 ### LDA ###
-
+if (!("Total.animals" %in% EXCLUDES)) EXCLUDES <- c(EXCLUDES, "Total.animals")
+LDA_zebras <- DimReduction(df_zebras,TYPE="LDA",EXCLUDE=EXCLUDES, VARIABLE="Species")
+if (VIEW) View(LDA_zebras$columns)
+df_zebras[,"LD1"] <- LDA_zebras$columns
 
 
 
@@ -126,6 +133,16 @@ df_cattle[,c("PC1","PC2")] <- PCA_cattle$columns
 
 TPS_landscape(df_zebras,output="contour",z="Total.animals",Lambda="default")
 TPS_distribution(df_zebras,output="contour",Lambda="default")
+
+TPS_landscape(df_zebras,output="contour",z="Total.animals", x="PP1", y="PP2", Lambda="default")
+
+
+
+
+
+
+
+
 
 TPS_landscape(df_zebras,output="contour",z="Total.animals",Lambda="special")
 
@@ -148,6 +165,28 @@ TPS_landscape(df_zebras,output="contour",FitnessMetric="Total.animals",VarName1=
 TPS_landscape(filter(df_zebras,Species==GZ),output="contour",FitnessMetric="Total.animals",VarName1="PC1",VarName2="PC2")#,Lambda="default")
 TPS_landscape(filter(df_zebras,Species==PZ),output="contour",FitnessMetric="Total.animals",VarName1="PC1",VarName2="PC2")#,Lambda="default")
 #
+
+
+### VISUALIZATION
+royal <- "#34568B"
+uv <- "#6B5B95"
+emerald <- "#88B04B"
+
+TPS_landscape(df_zebras,output="contour",z="Total.animals", x="PP1", y="LD1", Lambda="special")
+ggplot(data=df_zebras, mapping=aes(x=PP1, y=LD1, color=as.factor(Species)))+
+  stat_ellipse(aes(x=PP1, y=LD1, fill = as.factor(Species)), alpha = 0.2, geom = "polygon")+
+  geom_point()+
+  theme_bw()+
+  labs(x="PP1",y="LD1")+
+  scale_color_manual(name="Species",values=c(uv,emerald),breaks=c(2,3),labels=c("GZ","PZ"))+
+  scale_fill_manual(name="Species",values=c(uv,emerald),breaks=c(2,3),labels=c("GZ","PZ"))
+
+
+
+
+
+
+
 
 
 
@@ -194,15 +233,25 @@ ggbiplot(PCA_cattle)
 
 
 
-# gz_PCA_df <- df_gz[,INCLUDES]
-# PCA_gz <- prcomp(gz_PCA_df, center = TRUE,scale. = TRUE)
-# PC1 <- PC2 <- c()
-# for (row in 1:nrow(gz_PCA_df)) {
-#   PC1 <- c(PC1, dotprod(PCA_gz$x[,"PC1"],gz_PCA_df[row,]))
-#   PC2 <- c(PC2, dotprod(PCA_gz$x[,"PC2"],gz_PCA_df[row,]))
-# }
-# df_gz$PC1 <- PC1
-# df_gz$PC2 <- PC2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -232,25 +281,25 @@ EXCLUDES <- c("Identifier", "Latitude","Longitude","Year","Month","Day", "Date",
 # PPR_all <- PPR_LDA(df,FITNESS="Utility",exclude=EXCLUDES)
 # PPR_all[[2]]
 # PPR_all[[2]]$beta
-# View(abs(PPR_all[[3]]))
+# if (VIEW) View(abs(PPR_all[[3]]))
 # df[,c("PP1","PP2")] <- PPR_all[[1]][,c("PP1","PP2")]
 
 PPR_gz <- PPR_LDA(df_gz,FITNESS="Utility",exclude=EXCLUDES)
 PPR_gz[[2]]
 PPR_gz[[2]]$beta
-View(abs(PPR_gz[[3]]))
+if (VIEW) View(abs(PPR_gz[[3]]))
 df_gz[,c("PP1","PP2")] <- PPR_gz[[1]][,c("PP1","PP2")]
 
 PPR_pz <- PPR_LDA(df_pz,FITNESS="Utility",exclude=EXCLUDES)
 PPR_pz[[2]]
 PPR_pz[[2]]$beta
-View(abs(PPR_pz[[3]]))
+if (VIEW) View(abs(PPR_pz[[3]]))
 df_pz[,c("PP1","PP2")] <- PPR_pz[[1]][,c("PP1","PP2")]
 
 PPR_cattle <- PPR_LDA(df_cattle,FITNESS="Utility",exclude=c(EXCLUDES,"Rain"))
 PPR_cattle[[2]] ## DOESN'T WORK AS WELL -- as expected!
 PPR_cattle[[2]]$beta
-View(abs(PPR_cattle[[3]]))
+if (VIEW) View(abs(PPR_cattle[[3]]))
 df_cattle[,c("PP1","PP2")] <- PPR_cattle[[1]][,c("PP1","PP2")]
 
 # TPS_landscape(df,output="contour",FitnessMetric="Utility")
