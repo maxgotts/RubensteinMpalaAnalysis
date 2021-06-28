@@ -121,14 +121,21 @@ df_cattle[,c("PC1","PC2")] <- PCA_cattle$columns
 
 ### LDA ###
 if (!("Total.animals" %in% EXCLUDES)) EXCLUDES <- c(EXCLUDES, "Total.animals")
+
 LDA_zebras <- DimReduction(df_zebras,TYPE="LDA",EXCLUDE=EXCLUDES, VARIABLE="Species")
 if (VIEW) View(LDA_zebras$columns)
 df_zebras[,"LD1"] <- LDA_zebras$columns
+
+LDA_df <- DimReduction(df,TYPE="LDA",EXCLUDE=EXCLUDES, VARIABLE="Species")
+if (VIEW) View(LDA_df$columns)
+df[,c("LD1","LD2")] <- LDA_df$columns
 
 
 
 
 ### LANDSCAPES ###
+
+TPS_landscape(df,output="contour",z="Total.animals",Lambda="special",x="LD1",y="LD2")
 
 
 TPS_landscape(df_zebras,output="contour",z="Total.animals",Lambda="default")
