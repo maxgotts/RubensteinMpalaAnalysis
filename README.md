@@ -1,2 +1,0 @@
-# RubensteinMpalaAnalysis
-Cattle-Zebra Project
