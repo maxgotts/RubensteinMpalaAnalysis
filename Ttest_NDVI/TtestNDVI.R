@@ -7,7 +7,7 @@ library(rgdal)
 library(dplyr)
 library(ggpubr)
 
-if (FALSE) { # Run this code to create the NDVI data frame, otherwise just import it below
+if (TRUE) { # Run this code to create the NDVI data frame, otherwise just import it below
     NDVI_raster <- stack("/Users/maxgotts/Desktop/MPALA/Maps/MODUS\ Data/6-3-6-18/MOD13Q1.006__250m_16_days_NDVI_doy2021145_aid0001.tif")
     
     NDVI <- as.data.frame(NDVI_raster, xy = TRUE)
@@ -26,8 +26,8 @@ if (FALSE) { # Run this code to create the NDVI data frame, otherwise just impor
     df <- read.csv("~/Desktop/MPALA/Whitesheets/Gotts_ConvertedWhitesheets.csv")
     # df <- filter(df, !is.na(Total.animals))
     
-    lat.steps <- 0.01 #mean(diff(NDVI$Latitude)) ## 1.11 km
-    long.steps <- 0.01 #mean(diff(NDVI$Longitude)) ## 1.11 km
+    lat.steps <- 0.01/4 #mean(diff(NDVI$Latitude)) ## 1.11 km
+    long.steps <- 0.01/4 #mean(diff(NDVI$Longitude)) ## 1.11 km
     
     for (species in unique(df$Species)) {
         present <- paste0(species,".present")
@@ -55,7 +55,7 @@ if (FALSE) { # Run this code to create the NDVI data frame, otherwise just impor
     write.csv(NDVI, "/Users/maxgotts/Desktop/MPALA/Analysis/Ttest_NDVI.csv",row.names = FALSE)
 }
 
-NDVI <- read.csv("/Users/maxgotts/Desktop/MPALA/Analysis/Ttest_NDVI.csv")
+NDVI <- read.csv("/Users/maxgotts/Desktop/MPALA/Analysis/Ttest_NDVI/Ttest_NDVI.csv")
 
 
 
@@ -200,6 +200,54 @@ ggplot(p.values.evi, aes(p, fill=label))+
 #     labs(x="P-values",y="Count")
 # print(sum(ps_evi>0.05))
 
+
+
+
+## T-TEST
+z <- filter(NDVI, Zebras.present == 1)
+nz <- filter(NDVI, Cattle.present == 1)
+
+# ggqqplot(z.sample$NDVI-nz.sample$NDVI)
+
+bootstrap <- 20000
+num.samples <- 200
+ps_normal <- c()
+ps_nonparam <- c()
+for (i in 1:bootstrap) {
+    z.sample <- z[sample(nrow(z), num.samples), ]
+    nz.sample <- nz[sample(nrow(nz), num.samples), ]
+    
+    s <- shapiro.test(z.sample$NDVI-nz.sample$NDVI)
+    if (s$p.value > 0.05) {
+        t <- t.test(z.sample$NDVI, nz.sample$NDVI, paired = TRUE, alternative = "two.sided")
+        ps_normal <- c(ps_normal, t$p.value)
+    } else {
+        w <- wilcox.test(z.sample$NDVI, nz.sample$NDVI, paired = TRUE, alternative = "two.sided")
+        ps_nonparam <- c(ps_nonparam, w$p.value)
+    }
+}
+p.values <- data.frame(
+    p=c(
+        ps_normal,
+        ps_nonparam
+    ),label=c(
+        rep("Normal",times=length(ps_normal)),
+        rep("Non-parametric",times=length(ps_nonparam))
+    )
+)
+
+# ggplot(data.frame(p=ps_normal), aes(p))+geom_histogram(bins=100, fill="#34568B")+theme_bw()+
+#     labs(x="P-values",y="Count")
+# print(sum(ps_normal>0.05))
+# 
+# ggplot(data.frame(p=ps_nonparam), aes(p))+geom_histogram(bins=100, fill="#34568B")+theme_bw()+
+#     labs(x="P-values",y="Count")
+# print(sum(ps_nonparam>0.05))
+
+ggplot(p.values, aes(p, fill=label))+
+    geom_histogram(position = "stack", bins=round(bootstrap/50))+
+    theme_bw()+
+    labs(x="P-values",y="Count")
 
 
 
