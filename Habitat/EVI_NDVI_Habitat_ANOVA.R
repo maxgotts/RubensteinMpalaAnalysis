@@ -2,6 +2,7 @@ rm(list=ls())
 
 library(dplyr)
 library(ggplot2)
+library(raster)
 
 find_replace <- function(vec, dictionary) {
   new_vec <- rep(NA,times=length(vec))
@@ -41,22 +42,26 @@ find_replace <- function(vec, dictionary) {
 
 # if (FALSE) { # If Habitat/NDVI/EVI CSV needs to be updated
 
+lat_line <- 0.409859
 
-Habitat_raster <- stack("/Users/maxgotts/Desktop/MPALA/Maps/Habitat/Habitat_2021_06_30_clipped.tif")
+Habitat_raster <- raster("/Users/maxgotts/Desktop/MPALA/Maps/Habitat/Habitat_2021_06_30_clipped.tif")
 Habitat <- as.data.frame(Habitat_raster, xy = TRUE)
 colnames(Habitat) <- c("Longitude","Latitude","Habitat")
-Habitat <- filter(Habitat, !is.na(Habitat))
+Habitat <- filter(Habitat, !is.na(Habitat), Habitat!=0, Latitude>=lat_line)
 
-NDVI_raster <- stack("/Users/maxgotts/Desktop/MPALA/Maps/MODUS Data/Recent/EVI.tif")
+bush <- data.frame(inp=0:3,out=c(NA,"OB","LB","MB"))
+Habitat$Habitat <- find_replace(Habitat$Habitat, bush)
+
+NDVI_raster <- raster("/Users/maxgotts/Desktop/MPALA/Maps/MODUS Data/Recent/EVI.tif")
 NDVI <- as.data.frame(NDVI_raster, xy = TRUE)
 colnames(NDVI) <- c("Longitude","Latitude","NDVI")
-NDVI <- filter(NDVI, !is.na(NDVI))
+NDVI <- filter(NDVI, !is.na(NDVI), NDVI!=0, Latitude>=lat_line)
 NDVI$NDVI <- NDVI$NDVI * 0.0001
 
 EVI_raster <- stack("/Users/maxgotts/Desktop/MPALA/Maps/MODUS Data/Recent/NDVI.tif")
 EVI <- as.data.frame(EVI_raster, xy = TRUE)
 colnames(EVI) <- c("Longitude","Latitude","EVI")
-EVI <- filter(EVI, !is.na(EVI))
+EVI <- filter(EVI, !is.na(EVI), EVI!=0, Latitude>=lat_line)
 EVI$EVI <- EVI$EVI * 0.0001
   
 chd <- Habitat
@@ -71,7 +76,9 @@ for (pixelID in 1:nrow(chd)) {
   chd[pixelID,"EVI"] <- (EVI %>% mutate("Distance" = ((Longitude - chd$Longitude[pixelID])^2 + (Latitude - chd$Latitude[pixelID])^2)) %>% 
                            arrange(EVI))[1,"EVI"]
 }
-chd$Habitat <- chd$Habitat
+chd$Habitat <- as.factor(chd$Habitat)
+
+chd <- filter(chd, !is.na(EVI), !is.na(NDVI))
 
 (groups.compare <- kruskal.test(NDVI ~ Habitat, data=chd)) #aov #kruskal.test
 summary(groups.compare)
