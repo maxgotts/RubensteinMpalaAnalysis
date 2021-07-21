@@ -2,11 +2,14 @@ rm(list=ls())
 
 library(ggplot2)
 library(dplyr)
+library(reshape2)
+
+source('~/Desktop/MPALA/mpala.R')
 
 df <- read.csv("/Users/maxgotts/Desktop/MPALA/Whitesheets/ConvertedWhitesheets.csv")
 df <- filter(df, !is.na(Primary.habitat), !is.na(Total.animals), !is.na(Species))
 
-Habitat <- read.csv("/Users/maxgotts/Desktop/MPALA/Maps/Habitat/Habitat.csv")
+Habitat <- read.csv("/Users/maxgotts/Desktop/MPALA/Maps/TIFFs.csv")
 
 
 # Colours
@@ -15,7 +18,7 @@ orange <- "#fc8403"
 yellow <- "#f7d114"
 green <- "#00c750"
 blue <- "#033dfc" #1644db
-ob <- "#ffcc33"
+og <- "#ffcc33"
 lb <- "#a3c586"
 mb <- "#5b7444"
 gz <- "#a02923"
@@ -51,14 +54,17 @@ abs_bold <- function(V,a) {
 electivity$QuickSpecies <- rownames(electivity)
 melectivity <- melt(electivity)
 colnames(melectivity) <- c("QuickSpecies","Habitat","E")
-melectivity$Habitat <- factor(melectivity$Habitat, levels=c("OB","LB","MB"))
+melectivity$Habitat <- factor(melectivity$Habitat, levels=c("OG","LB","MB"))
 
 ggplot(melectivity, aes(x=QuickSpecies, y=E, fill=Habitat))+
+  annotate(geom="rect",xmin=0.5, xmax=1.5, ymin=-Inf, ymax=Inf, fill=gz.2, alpha=.4)+
+  annotate(geom="rect",xmin=1.5, xmax=2.5, ymin=-Inf, ymax=Inf, fill=pz.2, alpha=.4)+
+  annotate(geom="rect",xmin=2.5, xmax=3.5, ymin=-Inf, ymax=Inf, fill=cattle, alpha=.4)+
   theme_classic()+
   geom_col(position="dodge")+
-  scale_fill_manual(labels=c("Open bush","Light bush","Medium bush"), values=c(ob,lb,mb))+
+  scale_fill_manual(labels=c("Open bush","Light bush","Medium bush"), values=c(og,lb,mb))+
   labs(x="Species",y="Ivlev's Electivity Index (E')",fill="Habitat")+
-  scale_x_discrete(limits=c("GZ","PZ","Cattle","Camel"),labels=c("Grevy's zebra","Plains zebra","Cattle","Camel"))+
+  scale_x_discrete(limits=c("GZ","PZ","Cattle"),labels=c("Grevy's zebra","Plains zebra","Cattle"))+
   theme(legend.position="top")+
   geom_text(aes(label = abs_bold(round(E,3),0.1), y = E + 0.0365*(sign(E)-1), fontface=2), position = position_dodge(1), vjust = -0.5,family="Arial")+
   geom_text(aes(label = not_abs_bold(round(E,3),0.1), y = E + 0.0365*(sign(E)-1)), position = position_dodge(1), vjust = -0.5,family="Arial")+
