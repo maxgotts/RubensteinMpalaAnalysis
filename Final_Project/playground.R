@@ -16,7 +16,7 @@ vi.sample$Date <- ymd(paste0("2021-",gsub("_","-",substr(vi.sample$Date,6,10))))
 vi.sample$Days <- days_since_start(vi.sample$Date)
 vi.sample$Species <- "Random"
 
-df.ndvi <- df %>% filter(QuickSpecies %in% c(zebra.abbr, "Cattle")) %>% dplyr::select("Identifier","Date","Days","NDVI","QuickSpecies")
+df.ndvi <- df %>% filter(QuickSpecies %in% c(zebra.abbr, "Cattle"), ) %>% dplyr::select("Identifier","Date","Days","NDVI","QuickSpecies")
 df.ndvi$Date <- mdy(df.ndvi$Date)
 colnames(df.ndvi)[1] <- "ID"
 colnames(df.ndvi)[5] <- "Species"
@@ -33,6 +33,42 @@ ggplot(ndvi, aes(x=Days,y=NDVI, color=Species, shape=Species, fill=Species))+
   scale_color_manual(breaks=c(zebra.abbr,"Cattle","Random"),labels=c(zebra.names,"Cattle","Random"),values=c(gz.2,pz.2,cattle,"#000000"))+
   scale_fill_manual(breaks=c(zebra.abbr,"Cattle","Random"),labels=c(zebra.names,"Cattle","Random"),values=c(gz.2,pz.2,cattle,"#000000"))+
   scale_shape_manual(breaks=c(zebra.abbr,"Cattle","Random"),labels=c(zebra.names,"Cattle","Random"),values=c(16,17,15,23))+
+  theme_classic()+
+  labs(y="NDVI",x="Days since start of experiment",fill="Source",color="Source",shape="Source")+
+  
+  theme_classic()+theme(
+    legend.position = "top"
+  )
+
+#-------------------------NDVI by day with random FOR CATTLE-------------------------#
+source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
+df <- filter(df, Loop%in%1:2)
+vi <- get_vi_l12()
+
+vi$ID <- paste0(vi$Latitude,":",vi$Longitude)
+vi.sample <- melt(vi %>% dplyr::select(3,5,7,9,11) %>% sample_n(1000))
+colnames(vi.sample) <- c("ID","Date","NDVI")
+vi.sample$Date <- ymd(paste0("2021-",gsub("_","-",substr(vi.sample$Date,6,10))))
+vi.sample$Days <- days_since_start(vi.sample$Date)
+vi.sample$Species <- "Random"
+
+df.ndvi <- df %>% filter(Species %in% c("MC","CC","CKC")) %>% dplyr::select("Identifier","Date","Days","NDVI","Species")
+df.ndvi$Date <- mdy(df.ndvi$Date)
+colnames(df.ndvi)[1] <- "ID"
+colnames(df.ndvi)[5] <- "Species"
+
+ndvi <- rbind(df.ndvi, vi.sample)
+ggplot(ndvi, aes(x=Days,y=NDVI, color=Species, shape=Species, fill=Species))+
+  geom_point(size=3)+
+  stat_smooth(method="lm",formula=y~x,fullrange=T)+
+  stat_poly_eq(formula=y~x,
+               aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
+               parse=TRUE,label.x="right",label.y="top")+
+  # stat_smooth(method="lm",formula=y~poly(x,2),fullrange=T)+
+  # stat_smooth(method="loess",formula=y~x)+
+  scale_color_manual(breaks=c("MC","CC","CKC","Random"),labels=c("Mpala Cattle","Community Cattle","Community Kaparo Cattle","Random"),values=c(red,orange,yellow,"#000000"))+
+  scale_fill_manual(breaks=c("MC","CC","CKC","Random"),labels=c("Mpala Cattle","Community Cattle","Community Kaparo Cattle","Random"),values=c(red,orange,yellow,"#000000"))+
+  scale_shape_manual(breaks=c("MC","CC","CKC","Random"),labels=c("Mpala Cattle","Community Cattle","Community Kaparo Cattle","Random"),values=c(16,17,15,23))+
   theme_classic()+
   labs(y="NDVI",x="Days since start of experiment",fill="Source",color="Source",shape="Source")+
   
@@ -547,6 +583,31 @@ ggplot(df.zebra, aes(x=Days, y=Distance.from.mob, color=Species, shape=Species, 
 
 
 
+#-------------------------Cattle density by day-------------------------#
+source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
+ggplot(df.zebra, aes(x=Days, y=Cattle.density, color=Species, shape=Species, fill=Species))+
+  geom_point(size=2, data=ss.zebra, aes(y=(Med.cattle.density)))+geom_line(data=ss.zebra, aes(y=Med.cattle.density),linetype="dashed")+
+  geom_point(size=2, fill="white", aes(shape=paste0(Species,1)))+
+  
+  geom_ribbon(data=ss.zebra, aes(y=0, ymin=Min.cattle.density, ymax=Max.cattle.density, fill=Species),alpha=0.2)+
+  stat_smooth(formula=y~x, method="lm")+
+  stat_poly_eq(formula=y~x,
+               aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
+               color="black",parse=TRUE,label.x="left",label.y="top")+
+  
+  scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,1,17,2))+
+  
+  theme_classic()+
+  labs(y=bquote("Cattle density (number of individuals within 2"~km~"standardized by area)"),x="Experiment day",fill="Species",color="Species",shape="Species")+
+  
+  theme_classic()+theme(
+    legend.position = "top"
+  )+
+  facet_wrap(~Species)
+
+
 #-------------------------Mob distance by herd size-------------------------#
 ggplot(df.zebra, aes(x=Total.animals, y=Distance.from.mob, color=Species, shape=Species, fill=Species))+
   geom_point(size=3)+
@@ -583,6 +644,7 @@ ggplot(df.zebra, aes(x=Cattle.density, y=X.Green, color=Species, shape=Species, 
   scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
   scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
   scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,17))+
+  scale_y_continuous(labels=scales::percent)+
   
   theme_classic()+
   labs(y="% Green",x="Cattle density",fill="Species",color="Species",shape="Species")+
@@ -605,6 +667,7 @@ ggplot(df.zebra, aes(x=Cattle.density, y=X.Cover, color=Species, shape=Species, 
   scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
   scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
   scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,17))+
+  scale_y_continuous(labels=scales::percent)+
   
   theme_classic()+
   labs(y="% Cover",x="Cattle density",fill="Species",color="Species",shape="Species")+
@@ -753,30 +816,6 @@ ggplot(df.zebra, aes(x=Distance.from.mob, y=X.Cover, color=Species, shape=Specie
   facet_wrap(~Species)
 
 
-#-------------------------Cattle density by day-------------------------#
-source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
-ggplot(df.zebra, aes(x=Days, y=Cattle.density, color=Species, shape=Species, fill=Species))+
-  geom_point(size=2, data=ss.zebra, aes(y=(Med.cattle.density)))+geom_line(data=ss.zebra, aes(y=Med.cattle.density),linetype="dashed")+
-  geom_point(size=2, fill="white", aes(shape=paste0(Species,1)))+
-  
-  geom_ribbon(data=ss.zebra, aes(y=0, ymin=Min.cattle.density, ymax=Max.cattle.density, fill=Species),alpha=0.2)+
-  stat_smooth(formula=y~x, method="lm")+
-  stat_poly_eq(formula=y~x,
-               aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
-               color="black",parse=TRUE,label.x="left",label.y="top")+
-  
-  scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
-  scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
-  scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,1,17,2))+
-  
-  theme_classic()+
-  labs(y=bquote("Cattle density (number of individuals within 2"~km~"standardized by area)"),x="Experiment day",fill="Species",color="Species",shape="Species")+
-  
-  theme_classic()+theme(
-    legend.position = "top"
-  )+
-  facet_wrap(~Species)
-
 
 
 
@@ -859,15 +898,15 @@ ggplot(ss.zebra, aes(x=Days,y=X.Grazing, color=Species, shape=Species, fill=Spec
   facet_wrap(~Species)
 
 
-#-------------------------Grazing by X.Cover-------------------------#
+#-------------------------Grazing by X.Cover and X.Green-------------------------#
 source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
 library(gridExtra)
 df.temp <- df.zebra %>% filter(Activity!="Grazing")
 df.temp$Activity <- "Non-grazing"
 df.zebra.grazing <- rbind(df.zebra %>% filter(Activity=="Grazing"),df.temp)
 df.zebra.grazing$Group <- paste0(df.zebra.grazing$Activity,"_",df.zebra.grazing$Species)
-p.cover <- round(summary(aov(X.Cover ~ Activity, df.zebra.grazing))[[1]][1,5],4)
-p.green <- round(summary(aov(X.Green ~ Activity, df.zebra.grazing))[[1]][1,5],4)
+p.cover <- round(summary(aov(X.Cover ~ Group, df.zebra.grazing))[[1]][1,5],4)
+p.green <- round(summary(aov(X.Green ~ Group, df.zebra.grazing))[[1]][1,5],4)
 
 gg_cover <- ggplot(df.zebra.grazing, aes(y=X.Cover,x=Group, fill=Group))+
   # annotate(geom = "rect", xmin=-Inf,xmax=Inf,ymin=-Inf,ymax=Inf)+
@@ -916,7 +955,8 @@ df.temp <- df.zebra %>% filter(Activity!="Grazing")
 df.temp$Activity <- "Non-grazing"
 df.zebra.grazing <- rbind(df.zebra %>% filter(Activity=="Grazing"),df.temp)
 df.zebra.grazing$Group <- paste0(df.zebra.grazing$Activity,"_",df.zebra.grazing$Species)
-p.cattle <- round(summary(aov(Cattle.density ~ Activity, df.zebra.grazing))[[1]][1,5],4)
+p.cattle <- round(summary(aov(Cattle.density ~ Group, df.zebra.grazing))[[1]][1,5],4)
+TukeyHSD(aov(Cattle.density ~ Group, df.zebra.grazing))
 
 ggplot(df.zebra.grazing, aes(y=Cattle.density,x=Group, fill=Group))+
   geom_violin(trim=FALSE,alpha=0.6)+
@@ -926,7 +966,7 @@ ggplot(df.zebra.grazing, aes(y=Cattle.density,x=Group, fill=Group))+
   scale_fill_manual(breaks=c("Non-grazing_GZ","Grazing_GZ","Non-grazing_PZ","Grazing_PZ"),labels=c("Grevy's zebra: Non-grazing","Grevy's zebra: General","Plains zebra: Non-grazing","Plains zebra: Grazing"),values=c(gz.2,lb,pz.2,lb))+
   scale_x_discrete(limits=c("Non-grazing_GZ","Grazing_GZ","Non-grazing_PZ","Grazing_PZ"),labels=c("Grevy's zebra: Non-grazing","Grevy's zebra: Grazing","Plains zebra: Non-grazing","Plains zebra: Grazing"))+
   
-  geom_text(aes(label=paste0("One-way ANOVA p=",p.cover),x=3.85, y=120))+
+  geom_text(aes(label=paste0("One-way ANOVA p=",p.cattle),x=3.85, y=120))+
   
   theme_classic()+
   labs(x="Grazing vs non-grazing composition by species",y=bquote("Cattle density (number of individuals within 2"~km~"standardized by area)"),fill="Species",color="Species",shape="Species")+
@@ -936,12 +976,135 @@ ggplot(df.zebra.grazing, aes(y=Cattle.density,x=Group, fill=Group))+
   )
 
 
+
+
+#---------------------------------------------------------------------------------------------#
+#-------------------------------------Habitat Usage-------------------------------------------#
+#---------------------------------------------------------------------------------------------#
+
+#-------------------------OG by Cattle Density-------------------------#
+source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
+ggplot(ss.zebra, aes(x=Mean.cattle.density,y=X.OG, color=Species, shape=Species, fill=Species))+
+  geom_point(size=3)+
+  
+  stat_smooth(method="lm",formula=y~x)+
+  stat_poly_eq(formula=y~x,
+               aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
+               color="black",parse=TRUE,label.x="left",label.y="top")+
+  
+  scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,17))+
+  scale_y_continuous(labels=scales::percent)+
+  
+  theme_classic()+
+  labs(y="% Groups in open grassland",x="Cattle density",fill="Species",color="Species",shape="Species")+
+  
+  theme_classic()+theme(
+    legend.position = "top"
+  )+
+  facet_wrap(~Species)
+
+
+#-------------------------LB by Cattle Density-------------------------#
+ggplot(ss.zebra, aes(x=Mean.cattle.density,y=X.LB, color=Species, shape=Species, fill=Species))+
+  geom_point(size=3)+
+  
+  stat_smooth(method="lm",formula=y~x)+
+  stat_poly_eq(formula=y~x,
+               aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
+               color="black",parse=TRUE,label.x="left",label.y="top")+
+  
+  scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,17))+
+  scale_y_continuous(labels=scales::percent)+
+  
+  theme_classic()+
+  labs(y="% Groups in light bush",x="Cattle density",fill="Species",color="Species",shape="Species")+
+  
+  theme_classic()+theme(
+    legend.position = "top"
+  )+
+  facet_wrap(~Species)
+
+
+#-------------------------MB by Cattle Density-------------------------#
+ggplot(ss.zebra, aes(x=Mean.cattle.density,y=X.MB, color=Species, shape=Species, fill=Species))+
+  geom_point(size=3)+
+  
+  stat_smooth(method="lm",formula=y~x)+
+  stat_poly_eq(formula=y~x,
+               aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
+               color="black",parse=TRUE,label.x="left",label.y="top")+
+  
+  scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+  scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,17))+
+  scale_y_continuous(labels=scales::percent)+
+  
+  theme_classic()+
+  labs(y="% Groups in light bush",x="Cattle density",fill="Species",color="Species",shape="Species")+
+  
+  theme_classic()+theme(
+    legend.position = "top"
+  )+
+  facet_wrap(~Species)
+
+
+# ggplot(ss.zebra, aes(x=Total.cattle,y=X.MB, color=Species, shape=Species, fill=Species))+
+#   geom_point(size=3)+
+#   
+#   stat_smooth(method="lm",formula=y~x)+
+#   stat_poly_eq(formula=y~x,
+#                aes(label=paste(..rr.label.., p.value.label, sep = "~~~")),
+#                color="black",parse=TRUE,label.x="left",label.y="top")+
+#   
+#   scale_color_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+#   scale_fill_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(gz.2,pz.2,"white"))+
+#   scale_shape_manual(breaks=c(zebra.abbr,"mean"),labels=c(zebra.names,"Means"),values=c(16,17))+
+#   scale_y_continuous(labels=scales::percent)+
+#   
+#   theme_classic()+
+#   labs(y="% Groups in light bush",x="Cattle density",fill="Species",color="Species",shape="Species")+
+#   
+#   theme_classic()+theme(
+#     legend.position = "top"
+#   )+
+#   facet_wrap(~Species)
+
+
+
+
 #---------------------------------------------------------------------------------------------#
 #---------------------------------------AIC/BIC Analysis--------------------------------------#
 #---------------------------------------------------------------------------------------------#
 source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
+library(fitnesslandscapes2)
 ss.zebra$Mean.NDVI <- ss.zebra$Mean.NDVI - ss.zebra$Random.NDVI
-df.zebra$NDVI <- df.zebra$NDVI - df.zebra$Random.NDVI
+# df.zebra$NDVI <- 100*(df.zebra$NDVI - df.zebra$Random.NDVI)/df.zebra$Random.NDVI
+
+
+# Best fit for total animals ~ top_down + bottom_up
+summary(lm(Total.animals ~ NDVI + Distance.from.mob, df.zebra %>% filter(Species=="GZ")))
+# nothing significant
+
+TPS_landscape(df.zebra %>% filter(Species=="GZ", !is.na(NDVI), !is.na(Distance.from.mob)), x="NDVI", y="Distance.from.mob",z="Total.animals",output="contour", y_name="Distance from mob (m)")#x_name="NDVI (% better than average)",
+TPS_distribution(df.zebra %>% filter(Species=="GZ", !is.na(X.Green), !is.na(Distance.from.mob)), x="NDVI", y="Distance.from.mob",output="contour",x_name="NDVI",y_name="Distance from mob (m)",pdf=T)
+
+
+summary(lm(Total.animals ~ X.Green + Distance.from.mob, df.zebra %>% filter(Species=="PZ")))
+# cattle p=0.01839, coeff=-0.002006825
+
+TPS_landscape(df.zebra %>% filter(Species=="PZ", !is.na(X.Green), !is.na(Distance.from.mob)), x="X.Green", y="Distance.from.mob",z="Total.animals",output="contour",x_name="% Green",y_name="Distance from mob (m)")
+TPS_distribution(df.zebra %>% filter(Species=="PZ", !is.na(X.Green), !is.na(Distance.from.mob)), x="X.Green", y="Distance.from.mob",output="contour",x_name="% Green",y_name="Distance from mob (m)",pdf=T)
+
+
+
+
+
+
+
 
 #-------------------------Max herd size ss-------------------------#
 AIC(lm(Max.herd.size ~ Total.cattle + Mean.NDVI + Total.cattle*Mean.NDVI, ss.zebra %>% filter(Species=="GZ")))
@@ -1022,7 +1185,205 @@ summary(Med.PZ)
 
 
 
+#---------------------------------------------------------------------------------------------#
+#---------------------------------------PPR/TPS Analysis--------------------------------------#
+#---------------------------------------------------------------------------------------------#
 
+#-------------------------GZ-------------------------#
+df.pp <- filter(df.zebra, Species=="GZ", !is.na(X.Green), !is.na(X.Cover), !is.na(NDVI), !is.na(EVI), !is.na(Distance.from.mob), !is.na(Distance.from.herd), !is.na(Cattle.density), !is.na(Approximate.density), !is.na(Total.animals))
+df.norm <- as.data.frame(scale(df.pp[,c("X.Green","X.Cover","NDVI","EVI","Distance.from.mob","Distance.from.herd","Cattle.density")]))
+explanatory <- as.matrix(df.norm)
+response <- as.matrix(df.pp$Total.animals)
+df.ppr <- stats::ppr(explanatory,response,nterms=2,maxterms=5)
+pprdirections <- df.ppr$alpha
+PP1 <- dotprod2(df.norm, pprdirections[,"term 1"])
+PP2 <- dotprod2(df.norm, pprdirections[,"term 2"])
+PPR_columns <- cbind(PP1,PP2)
+colnames(PPR_columns) <- c("PP1","PP2")
+output <- list(
+  PPR_columns,
+  pprdirections,
+  df.ppr
+)
+names(output) <- c("columns","weights","ppr")
+df.zebra[df.zebra$Species=="GZ" & !is.na(df.zebra$X.Green)& !is.na(df.zebra$X.Cover)& !is.na(df.zebra$NDVI)& !is.na(df.zebra$EVI)& !is.na(df.zebra$Distance.from.mob)& !is.na(df.zebra$Distance.from.herd)& !is.na(df.zebra$Cattle.density) & !is.na(df.zebra$Approximate.density)& !is.na(df.zebra$Total.animals),c("PP1","PP2")] <- output$columns
+  # EVI, X.Green
+TPS_landscape(df.zebra %>% filter(Species=="GZ", !is.na(PP1), !is.na(PP2)), z="Total.animals")
+
+
+#------------------------PZ-------------------------#
+df.pp <- filter(df.zebra, Species=="PZ", !is.na(X.Green), !is.na(X.Cover), !is.na(NDVI), !is.na(EVI), !is.na(Distance.from.mob), !is.na(Distance.from.herd), !is.na(Cattle.density), !is.na(Approximate.density), !is.na(Total.animals))
+df.norm <- as.data.frame(scale(df.pp[,c("X.Green","X.Cover","NDVI","EVI","Distance.from.mob","Distance.from.herd","Cattle.density")]))
+explanatory <- as.matrix(df.norm)
+response <- as.matrix(df.pp$Total.animals)
+df.ppr <- stats::ppr(explanatory,response,nterms=2,maxterms=5)
+pprdirections <- df.ppr$alpha
+PP1 <- dotprod2(df.norm, pprdirections[,"term 1"])
+PP2 <- dotprod2(df.norm, pprdirections[,"term 2"])
+PPR_columns <- cbind(PP1,PP2)
+colnames(PPR_columns) <- c("PP1","PP2")
+output <- list(
+  PPR_columns,
+  pprdirections,
+  df.ppr
+)
+names(output) <- c("columns","weights","ppr")
+df.zebra[df.zebra$Species=="PZ" & !is.na(df.zebra$X.Green)& !is.na(df.zebra$X.Cover)& !is.na(df.zebra$NDVI)& !is.na(df.zebra$EVI)& !is.na(df.zebra$Distance.from.mob)& !is.na(df.zebra$Distance.from.herd)& !is.na(df.zebra$Cattle.density) & !is.na(df.zebra$Approximate.density)& !is.na(df.zebra$Total.animals),c("PP1","PP2")] <- output$columns
+# EVI, X.Green
+TPS_landscape(df.zebra %>% filter(Species=="PZ", !is.na(PP1), !is.na(PP2)), z="Total.animals")
+
+
+
+
+
+
+
+#---------------------------------------------------------------------------------------------#
+#-------------------------------------AIC/BIC Analysis 2--------------------------------------#
+#---------------------------------------------------------------------------------------------#
+source('~/Desktop/MPALA/Analysis/Final_Project/playgroundSetup.R')
+
+ss$Mean.NDVI <- ss$Mean.NDVI-ss$Random.NDVI
+
+ss.gz <- ss %>% filter(Exp.2!="Not in experiment", Species=="GZ")
+summary(lm(Max.herd.size ~ Mean.cattle.density + Random.NDVI + Random.NDVI*Mean.cattle.density, ss.gz))
+
+ss.pz <- ss %>% filter(Exp.2!="Not in experiment", Species=="PZ")
+summary(lm(Max.herd.size ~ Total.cattle + Random.NDVI + Random.NDVI*Total.cattle, ss.pz))
+
+
+summary(aov(Max.herd.size ~ Exp.1, ss.gz))
+summary(aov(Max.herd.size ~ Exp.1, ss.pz))
+
+summary(aov(Max.herd.size ~ Exp.2, ss.gz))
+summary(aov(Max.herd.size ~ Exp.2, ss.pz))
+
+
+
+#---------------------------------------------------------------------------------------------#
+#-------------------------------------AIC/BIC Analysis 3--------------------------------------#
+#---------------------------------------------------------------------------------------------#
+source('~/Desktop/MPALA/Analysis/Final_Project/finalSetup.R')
+
+ss$Mean.NDVI.adj <- ss$Mean.NDVI-ss$Random.NDVI
+df$NDVI.adj <- df$NDVI-df$Random.NDVI
+
+ss.gz <- ss %>% filter(Species=="GZ")
+ss.pz <- ss %>% filter(Species=="PZ")
+df.gz <- df %>% filter(Species=="GZ")
+df.pz <- df %>% filter(Species=="PZ")
+
+AIC(lm(Total.animals ~ X.Green + NDVI + EVI + X.Cover + Cattle.density + Distance.from.mob, df.pz))
+
+AIC(lm(Upper.herd.size ~ Upper.X.green + Upper.distance.from.mob + Upper.X.green*Upper.distance.from.mob, ss.pz))
+
+
+
+AIC(lm(Distance.from.herd ~ Cattle.density, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob, df.pz))
+AIC(lm(Distance.from.herd ~ Distance.from.mob, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob + NDVI, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob + EVI, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob + X.Cover, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob + X.Green, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob + X.Green*Distance.from.mob, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob + X.Cover*Distance.from.mob, df.pz))
+AIC(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob, df.pz))
+summary(lm(Distance.from.herd ~ Cattle.density + Distance.from.mob, df.pz))
+#
+
+AIC(lm(Mean.distance.from.herd ~ Mean.cattle.density, ss.pz))
+AIC(lm(Mean.distance.from.herd ~ Mean.cattle.density + Mean.distance.to.water, ss.pz))
+#
+
+
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + X.MB + Mean.cattle.density + Mean.distance.from.mob, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + X.MB + Mean.distance.from.mob, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + X.MB + Mean.distance.from.mob + Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + X.MB + Mean.distance.from.mob + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + X.MB + Mean.distance.from.mob + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI, ss.pz)) # EVI, x.green no good
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + X.MB + Mean.distance.from.mob + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI + Mean.NDVI*Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + Mean.distance.from.mob + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI + Mean.NDVI*Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + Mean.distance.from.mob + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI + Mean.NDVI*Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI + Mean.NDVI*Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI*Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI*Mean.X.cover, ss.pz))
+AIC(pzl <- lm(Mean.distance.from.herd ~ X.OG + X.LB + Mean.X.cover + Mean.distance.from.mob + Mean.NDVI + Mean.X.cover*Mean.distance.from.mob + Mean.NDVI*Mean.X.cover, ss.pz))
+summary(pzl)
+
+
+AIC(pzl <- lm(Mean.herd.size ~ X.OG + X.LB + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob, ss.pz))
+summary(pzl) ## Good
+#
+
+
+
+
+
+
+
+
+
+
+#---------------------------------------------------------------------------------------------#
+
+
+summary(aov(Max.herd.size ~ Exp.1, ss.gz))
+summary(aov(Max.herd.size ~ Exp.1, ss.pz))
+
+summary(aov(Max.cattle.density ~ Exp.1, ss.gz))
+summary(aov(Max.cattle.density ~ Exp.1, ss.pz))
+summary(aov(Mean.cattle.density ~ Exp.1, ss.gz))
+summary(aov(Mean.cattle.density ~ Exp.1, ss.pz))
+summary(aov(Med.cattle.density ~ Exp.1, ss.gz))
+summary(aov(Med.cattle.density ~ Exp.1, ss.pz))
+
+summary(aov(Max.cattle.density ~ Exp.1 + Max.X.green, ss.gz))
+summary(aov(Max.cattle.density ~ Exp.1 + Max.X.green, ss.pz))
+
+summary(aov(Max.distance.from.mob ~ Exp.1, ss.gz))
+summary(aov(Max.distance.from.mob ~ Exp.1, ss.pz))
+
+summary(aov(Distance.from.mob ~ Exp.1, df.gz))
+summary(aov(Distance.from.mob ~ Exp.1, df.pz))
+
+
+
+#---------------------------------------------------------------------------------------------#
+#-------------------------------------AIC/BIC Analysis 4--------------------------------------#
+#---------------------------------------------------------------------------------------------#
+source('~/Desktop/MPALA/Analysis/Final_Project/finalSetup.R')
+library(ppcor)
+
+ss$Mean.NDVI.adj <- ss$Mean.NDVI-ss$Random.NDVI
+df$NDVI.adj <- df$NDVI-df$Random.NDVI
+
+ss.gz <- ss %>% filter(Species=="GZ")
+ss.pz <- ss %>% filter(Species=="PZ")
+df.gz <- df %>% filter(Species=="GZ")
+df.pz <- df %>% filter(Species=="PZ")
+
+
+pzl <- lm(Mean.herd.size ~ X.OG + X.LB + Mean.X.cover + Mean.X.cover*Mean.distance.from.mob, ss.pz)
+summary(pzl)
+
+ss.pz.pcor <- ss.pz  %>% filter(!is.na(Mean.distance.from.mob))
+pcor.test(ss.pz.pcor$Mean.herd.size, ss.pz.pcor$Mean.X.cover, ss.pz.pcor$Mean.distance.from.mob, method = c("pearson", "kendall", "spearman"))
+pcor.test(ss.pz.pcor$Mean.herd.size, ss.pz.pcor$Mean.distance.from.mob, ss.pz.pcor$Mean.X.cover, method = c("pearson", "kendall", "spearman"))
+
+
+
+AIC(gzl <- lm(Mean.herd.size ~ Mean.cattle.density + Mean.NDVI, ss.gz))
+AIC(gzl <- lm(Mean.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob, ss.gz))
+AIC(gzl <- lm(Mean.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + Mean.distance.from.herd, ss.gz))
+AIC(gzl <- lm(Mean.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + Mean.distance.from.herd + X.hock, ss.gz))
+AIC(gzl <- lm(Mean.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + Mean.distance.from.herd + X.hock + X.hock*Mean.NDVI, ss.gz))
+summary(lm(Mean.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + Mean.distance.from.herd + X.hock + X.hock*Mean.NDVI, ss.gz))
+
+AIC(lm(Max.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + Mean.distance.from.herd + X.hock + X.hock*Mean.NDVI, ss.gz))
+AIC(lm(Max.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + X.hock + X.hock*Mean.NDVI, ss.gz))
+AIC(lm(Max.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + X.hock + X.hock*Mean.NDVI, ss.gz))
+summary(lm(Max.herd.size ~ Mean.cattle.density + Mean.NDVI + Mean.distance.from.mob + X.hock + X.hock*Mean.NDVI, ss.gz))
 
 
 
